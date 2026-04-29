@@ -74,11 +74,12 @@ async def read_file(file_path: str) -> str:
         return f"Hata: {file_path} dosyası bulunamadı."
 
     try:
-        import aiofiles
+        import aiofiles  # type: ignore[import-untyped]
 
         async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
             content = await f.read()
-        return content
+            from typing import cast
+            return cast(str, content)
     except Exception as e:
         return f"Dosya okunurken hata oluştu: {str(e)}"
 

@@ -1,11 +1,24 @@
 [tool.poetry]
-name = "agentkit"
-version = "0.1.0"
-description = "A lightweight, transparent, and observable AI agent framework."
+name = "agentkit-ai"
+version = "0.2.0"
+description = "A lightweight, transparent, and observable AI agent framework with multi-agent capabilities."
 authors = ["Arda <email@example.com>"]
 readme = "README.md"
 repository = "https://github.com/agentkit/agentkit"
 homepage = "https://github.com/agentkit/agentkit"
+keywords = ["ai", "llm", "agent", "multi-agent", "openai", "anthropic", "framework"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+packages = [
+    { include = "agentkit" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -20,9 +33,17 @@ duckduckgo-search = "^5.2.0"
 aiofiles = "^23.2.1"
 sentence-transformers = "^2.6.0"
 typer = "^0.12.0"
+nest-asyncio = "^1.6.0"
 rich = "^13.7.0"
 groq = "^1.2.0"
 python-dotenv = "^1.2.2"
+PyGithub = { version = "^2.2.0", optional = true }
+notion-client = { version = "^2.2.1", optional = true }
+
+[tool.poetry.extras]
+github = ["PyGithub"]
+notion = ["notion-client"]
+all = ["PyGithub", "notion-client"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.0"
