@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentkit-ai"
-version = "0.2.0"
+version = "0.1.0"
 description = "A lightweight, transparent, and observable AI agent framework with multi-agent capabilities."
 authors = ["Arda <email@example.com>"]
 readme = "README.md"
