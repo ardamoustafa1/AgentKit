@@ -1,6 +1,6 @@
 from agentkit.tools.base import ToolDefinition, ToolRegistry, execute_tool
 from agentkit.tools.decorator import tool
-from agentkit.tools.builtins import web_search, python_repl, read_file, write_file
+from agentkit.tools.builtins import web_search, local_python_repl, sandbox_python_repl, read_file, write_file
 
 __all__ = [
     "ToolDefinition",
@@ -8,7 +8,8 @@ __all__ = [
     "execute_tool",
     "tool",
     "web_search",
-    "python_repl",
+    "local_python_repl",
+    "sandbox_python_repl",
     "read_file",
     "write_file",
 ]

@@ -13,7 +13,7 @@ from agentkit.llm.ollama import OllamaLLM
 from agentkit.llm.groq import GroqLLM
 from agentkit.llm.base import BaseLLM
 from agentkit.llm.anthropic import AnthropicLLM
-from agentkit.tools import ToolRegistry, web_search, python_repl
+from agentkit.tools import ToolRegistry, web_search, local_python_repl
 from agentkit.memory.short_term import ShortTermMemory
 
 # .env dosyasını yükle
@@ -26,7 +26,7 @@ app.add_typer(tools_app, name="tools", help="Araç (Tool) yönetimi")
 # CLI için global Tool Registry
 registry = ToolRegistry()
 registry.register(web_search)
-registry.register(python_repl)
+registry.register(local_python_repl)
 
 
 def get_llm(model: str) -> BaseLLM:
@@ -127,6 +127,17 @@ def chat_command(
     asyncio.run(_chat())
 
 
+@app.command("deploy")
+def deploy_command(
+    port: int = typer.Option(8000, "--port", "-p", help="Sunucu portu"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Sunucu hostu")
+) -> None:
+    """AgentKit Web UI ve API sunucusunu ayağa kaldırır (One-command deploy)."""
+    import uvicorn
+    console.print(Panel.fit(f"[bold green]AgentKit Server başlatılıyor...[/bold green]\n🌐 Web UI: http://{host}:{port}\n🔌 API: http://{host}:{port}/api/chat"))
+    uvicorn.run("agentkit.server.app:app", host=host, port=port, reload=False)
+
+
 @tools_app.command("list")
 def list_tools() -> None:
     """Kayıtlı ve kullanılabilir tüm araçları listeler."""
@@ -157,9 +168,9 @@ if __name__ == "__main__":
 # Sen: Bana 500'ün yüzde 15'ini hesapla.
 # [DEBUG] --- Iteration 1/5 ---
 # [DEBUG] [Agent Thought]: Bunun için matematik aracı kullanmalıyım.
-# [WARNING] [Agent Action]: python_repl({'code': 'print(500 * 0.15)'})
-# [DEBUG] [Tool Execution] Çalıştırılıyor: python_repl | Parametreler: {'code': 'print(500 * 0.15)'}
-# [DEBUG] [Tool Execution] Başarılı: python_repl | Sonuç uzunluğu: 4
+# [WARNING] [Agent Action]: local_python_repl({'code': 'print(500 * 0.15)'})
+# [DEBUG] [Tool Execution] Çalıştırılıyor: local_python_repl | Parametreler: {'code': 'print(500 * 0.15)'}
+# [DEBUG] [Tool Execution] Başarılı: local_python_repl | Sonuç uzunluğu: 4
 # [DEBUG] [Agent Observation]: 75.0
 # [DEBUG] --- Iteration 2/5 ---
 # AgentKit: 500'ün yüzde 15'i 75'tir.

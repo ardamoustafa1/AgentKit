@@ -1,38 +1,38 @@
-"""Builtin tool'ların (web_search, python_repl, read_file, write_file) kapsamlı testleri."""
+"""Builtin tool'ların (web_search, local_python_repl, read_file, write_file) kapsamlı testleri."""
 
 import pytest
 from typing import Any
-from agentkit.tools.builtins import web_search, python_repl, read_file, write_file
+from agentkit.tools.builtins import web_search, local_python_repl, read_file, write_file
 
 
-def test_python_repl_safe() -> None:
+def test_local_python_repl_safe() -> None:
     """Python REPL'in güvenli kodları çalıştırması."""
-    res = python_repl.func(code="print(5 * 5)")
+    res = local_python_repl.func(code="print(5 * 5)")
     assert "25" in res
 
 
-def test_python_repl_no_output() -> None:
+def test_local_python_repl_no_output() -> None:
     """Çıktı üretmeyen kodun 'Çıktı yok' mesajı döndürmesi."""
-    res = python_repl.func(code="x = 42")
+    res = local_python_repl.func(code="x = 42")
     assert "Çıktı yok" in res
 
 
-def test_python_repl_blocked_import() -> None:
+def test_local_python_repl_blocked_import() -> None:
     """Tehlikeli import'ların engellenmesi."""
-    res = python_repl.func(code="import os")
+    res = local_python_repl.func(code="import os")
     assert "Hata türü" in res or "ImportError" in res
 
 
-def test_python_repl_runtime_error() -> None:
+def test_local_python_repl_runtime_error() -> None:
     """Çalışma zamanı hatasının güvenli yakalanması."""
-    res = python_repl.func(code="print(1/0)")
+    res = local_python_repl.func(code="print(1/0)")
     assert "Hata türü" in res
     assert "ZeroDivision" in res
 
 
-def test_python_repl_math() -> None:
+def test_local_python_repl_math() -> None:
     """math modülünün sandbox'ta kullanılabilmesi."""
-    res = python_repl.func(code="m = __builtins__['math']; print(m.factorial(5))")
+    res = local_python_repl.func(code="m = __builtins__['math']; print(m.factorial(5))")
     assert "120" in res
 
 

@@ -3,7 +3,7 @@ from agentkit.agent import Agent
 from agentkit.llm.openai import OpenAILLM
 from agentkit.orchestrator import Team
 from agentkit.memory import ShortTermMemory
-from agentkit.tools import ToolRegistry, web_search, python_repl
+from agentkit.tools import ToolRegistry, web_search, local_python_repl
 from agentkit.tools.integrations import github_get_issue
 
 
@@ -24,7 +24,7 @@ async def main() -> None:
 
     # Yazılımcı Ajan: Python kodu yazıp test edebilir ve GitHub'dan veri çekebilir
     coder_tools = ToolRegistry()
-    coder_tools.register(python_repl)
+    coder_tools.register(local_python_repl)
     coder_tools.register(github_get_issue)
     coder = Agent(
         llm=llm,

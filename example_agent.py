@@ -2,7 +2,7 @@ import asyncio
 import os
 from agentkit.agent import Agent
 from agentkit.llm.openai import OpenAILLM
-from agentkit.tools import ToolRegistry, web_search, python_repl
+from agentkit.tools import ToolRegistry, web_search, local_python_repl
 from agentkit.memory.short_term import ShortTermMemory
 
 os.environ["OPENAI_API_KEY"] = "sk-xxxxxx" # Kendi anahtarını yaz
@@ -11,7 +11,7 @@ async def main() -> None:
     llm = OpenAILLM(model_name="gpt-4o")
     tools = ToolRegistry()
     tools.register(web_search)
-    tools.register(python_repl)
+    tools.register(local_python_repl)
     
     memory = ShortTermMemory()
     system_prompt = "Sen araştıran ve kod yazıp hesaplayan akıllı bir asistansın."

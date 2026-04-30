@@ -15,7 +15,7 @@ def test_tools_list() -> None:
     result = runner.invoke(app, ["tools", "list"])
     assert result.exit_code == 0
     assert "web_search" in result.output
-    assert "python_repl" in result.output
+    assert "local_python_repl" in result.output
 
 
 def _make_mock_agent() -> MagicMock:

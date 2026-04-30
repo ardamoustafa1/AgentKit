@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 from loguru import logger
 
+from agentkit.utils.observability import trace_tool
+
 
 class ToolDefinition(BaseModel):
     """
@@ -49,6 +51,14 @@ class ToolRegistry:
         ]
 
 
+class TransferException(Exception):
+    """Sürü (Swarm) mimarisinde ajanlar arası görev devri için fırlatılır."""
+    def __init__(self, target_agent: str, message: str):
+        self.target_agent = target_agent
+        self.message = message
+        super().__init__(f"Transfer to {target_agent}: {message}")
+
+@trace_tool(name="execute_tool")
 async def execute_tool(tool_def: ToolDefinition, **kwargs: Any) -> str:
     """
     Seçilen tool'u verilen parametrelerle çalıştırır, hataları yakalar ve loglar.
@@ -66,6 +76,9 @@ async def execute_tool(tool_def: ToolDefinition, **kwargs: Any) -> str:
             f"[Tool Execution] Başarılı: {tool_def.name} | Sonuç uzunluğu: {len(str_result)}"
         )
         return str_result
+    except TransferException as e:
+        # Swarm geçişini engellememek için hatayı yukarı fırlat
+        raise e
     except Exception as e:
         error_msg = f"Hata oluştu ({tool_def.name}): {str(e)}"
         logger.error(f"[Tool Execution] {error_msg}")

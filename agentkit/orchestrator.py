@@ -2,7 +2,8 @@ from typing import Dict
 from pydantic import BaseModel, Field
 
 from agentkit.agent import Agent, AgentResponse
-from agentkit.tools.base import ToolDefinition
+from agentkit.tools.base import ToolDefinition, TransferException
+from loguru import logger
 
 
 class DelegateToolParams(BaseModel):
@@ -103,3 +104,79 @@ class Team:
             self.manager.memory.set_system_prompt(original_prompt + system_addon)
 
         return await self.manager.run(prompt)
+
+
+class Swarm:
+    """
+    Swarm, ajanların bir merkezi yönetici (manager) olmadan birbiriyle iletişime geçebildiği
+    (Graph-based/Non-hierarchical) modern bir multi-agent sürüsüdür.
+    """
+
+    def __init__(self, starting_agent: Agent) -> None:
+        self.starting_agent = starting_agent
+        self.agents: Dict[str, Agent] = {starting_agent.name: starting_agent}
+
+    def add_agent(self, agent: Agent) -> None:
+        """Swarm (sürü) ağına yeni bir ajan ekler."""
+        self.agents[agent.name] = agent
+
+    def _inject_transfer_tools(self) -> None:
+        """Sürüdeki her ajana, diğer ajanlara geçiş yapabilmesi için transfer_to_agent aracını enjekte eder."""
+        agent_names = list(self.agents.keys())
+        for name, agent in self.agents.items():
+            
+            def make_transfer_func(current_agent_name=name):
+                def transfer_to_agent(target_agent: str, context_message: str) -> str:
+                    """Görevi sürüdeki başka bir ajana devreder. Bu aracı kullandığında kontrolü kaybedersin."""
+                    if target_agent not in self.agents:
+                        return f"Hata: {target_agent} bulunamadı. Mevcut ajanlar: {agent_names}"
+                    
+                    # Bu noktada istisna fırlatıyoruz ki execute_tool ve arun döngüsü anında kırılsın!
+                    raise TransferException(target_agent=target_agent, message=context_message)
+                return transfer_to_agent
+
+            # Eğer zaten ekliyse tekrar eklememek için kontrol edebiliriz
+            if not agent.tools.get_tool("transfer_to_agent"):
+                transfer_tool = ToolDefinition(
+                    name="transfer_to_agent",
+                    description=f"Görevi başka bir ajana devreder. Kullanılabilir ajanlar: {agent_names}. Bunu çalıştırdığında kontrolü kaybedersin.",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "target_agent": {"type": "string"},
+                            "context_message": {"type": "string", "description": "Hedef ajana devredilirken gönderilecek bağlam veya yönerge."}
+                        },
+                        "required": ["target_agent", "context_message"]
+                    },
+                    func=make_transfer_func()
+                )
+                agent.tools.register(transfer_tool)
+
+            # System prompt'u güncelle
+            orig = agent.memory.system_prompt.content if agent.memory.system_prompt else ""
+            if "Swarm Sürüsü" not in orig:
+                addon = f"\n[Swarm Sürüsü] Sen bir ajan sürüsünün parçasısın. Kendi yeteneklerinin yetmediği yerde 'transfer_to_agent' aracını kullanarak görevi şu uzmanlara devredebilirsin: {agent_names}."
+                agent.memory.set_system_prompt(orig + addon)
+
+    async def run(self, user_message: str) -> AgentResponse:
+        """Swarm döngüsünü başlatır ve bir ajan son sözü söyleyene kadar (transfer yapmayana kadar) çalışır."""
+        self._inject_transfer_tools()
+        
+        current_agent = self.starting_agent
+        current_message = user_message
+        
+        while True:
+            logger.info(f"🐝 [Swarm] Aktif Ajan: {current_agent.name}")
+            try:
+                # Ajan görevini yapmaya başlar
+                response = await current_agent.run(current_message)
+                
+                # Ajan hiçbir transfer yapmadan kendi işini bitirip döndüyse, sürü görevi bitirir.
+                logger.success(f"🏁 [Swarm] Görev {current_agent.name} tarafından tamamlandı!")
+                return response
+                
+            except TransferException as e:
+                logger.warning(f"🔄 [Swarm Transfer] {current_agent.name} -> {e.target_agent} | Neden: {e.message}")
+                current_agent = self.agents[e.target_agent]
+                current_message = f"Bir önceki ajan sana görevi şu notla devretti:\n{e.message}"
+                # Döngü yeni ajanın yeni prompt'u ile devam eder...

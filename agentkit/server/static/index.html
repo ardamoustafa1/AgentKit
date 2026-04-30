@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentKit UI</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #333; background: #f9f9f9;}
+        .chat-box { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-height: 400px; max-height: 60vh; overflow-y: auto; margin-bottom: 1rem; }
+        .message { margin-bottom: 1rem; padding: 1rem; border-radius: 8px; }
+        .user { background: #e0f2fe; margin-left: 2rem; }
+        .agent { background: #f3f4f6; margin-right: 2rem; }
+        .steps { font-size: 0.85rem; color: #666; background: #fff; padding: 0.5rem; border: 1px solid #ddd; margin-top: 0.5rem; border-radius: 4px; display: none; }
+        .input-area { display: flex; gap: 0.5rem; }
+        input[type="text"] { flex: 1; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        button { padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background: #1d4ed8; }
+        .typing { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>🚀 AgentKit Step-by-Step UI</h1>
+    
+    <div class="chat-box" id="chat">
+        <div class="message agent">Merhaba! Size nasıl yardımcı olabilirim?</div>
+    </div>
+    
+    <div class="input-area">
+        <input type="text" id="msgInput" placeholder="Ajanınıza bir görev verin..." onkeypress="if(event.key === 'Enter') sendMsg()">
+        <button onclick="sendMsg()">Gönder</button>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('msgInput');
+
+        async function sendMsg() {
+            const text = input.value.trim();
+            if(!text) return;
+            
+            // Add user message
+            chat.innerHTML += `<div class="message user">${text}</div>`;
+            input.value = '';
+            
+            // Add agent placeholder
+            const agentId = 'agent_' + Date.now();
+            chat.innerHTML += `<div class="message agent" id="${agentId}"><div class="content typing">Yanıt Bekleniyor...</div><div class="steps" id="${agentId}_steps"></div></div>`;
+            chat.scrollTop = chat.scrollHeight;
+            
+            const agentContent = document.querySelector(`#${agentId} .content`);
+            const agentSteps = document.getElementById(`${agentId}_steps`);
+            agentContent.innerHTML = '';
+            agentContent.classList.remove('typing');
+
+            try {
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.slice(6).trim();
+                            if (dataStr === '[DONE]') break;
+                            if (!dataStr) continue;
+                            
+                            try {
+                                const data = JSON.parse(dataStr);
+                                if (data.chunk) {
+                                    agentContent.innerHTML += data.chunk.replace(/\n/g, '<br>');
+                                }
+                                if (data.steps) {
+                                    agentSteps.style.display = 'block';
+                                    agentSteps.innerHTML = '<strong>Adımlar:</strong><br>';
+                                    data.steps.forEach(s => {
+                                        let color = s.step_type === 'thought' ? 'blue' : (s.step_type === 'action' ? 'orange' : 'green');
+                                        agentSteps.innerHTML += `<span style="color:${color}">[${s.step_type}]</span> ${s.content}<br>`;
+                                    });
+                                }
+                                chat.scrollTop = chat.scrollHeight;
+                            } catch(e) {}
+                        }
+                    }
+                }
+            } catch(e) {
+                agentContent.innerHTML = 'Bir hata oluştu.';
+            }
+        }
+    </script>
+</body>
+</html>

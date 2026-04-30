@@ -1,6 +1,6 @@
 import asyncio
 from agentkit.tools import ToolRegistry, tool, execute_tool
-from agentkit.tools.builtins import web_search, python_repl
+from agentkit.tools.builtins import web_search, local_python_repl
 
 # Kendi özel tool'umuzu yaratıyoruz
 @tool
@@ -22,7 +22,7 @@ async def main() -> None:
     registry = ToolRegistry()
     registry.register(hesapla)
     registry.register(web_search)
-    registry.register(python_repl)
+    registry.register(local_python_repl)
 
     schemas = registry.get_all_schemas()
     import json

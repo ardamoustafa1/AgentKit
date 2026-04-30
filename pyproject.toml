@@ -39,6 +39,9 @@ groq = "^1.2.0"
 python-dotenv = "^1.2.2"
 PyGithub = { version = "^2.2.0", optional = true }
 notion-client = { version = "^2.2.1", optional = true }
+fastapi = "^0.136.1"
+uvicorn = "^0.46.0"
+langfuse = "^4.5.1"
 
 [tool.poetry.extras]
 github = ["PyGithub"]
